@@ -263,4 +263,68 @@
   if (site) {
     badge.textContent = site;
   } else {
-    badge.textContent =
+    badge.textContent = "Site non identifié";
+    statusEl.className = "missing-site";
+    statusEl.textContent = "Ce lien ne précise pas de site. Utilise le lien qui t'a été transmis par ton Directeur Régional.";
+    submitBtn.disabled = true;
+  }
+
+  // Date du jour par défaut
+  document.getElementById("date").value = new Date().toISOString().split("T")[0];
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!site) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Envoi en cours...";
+    statusEl.className = "";
+    statusEl.style.display = "none";
+
+    const payload = {
+      site: site,
+      date: document.getElementById("date").value,
+      affaires_ouvertes: Number(document.getElementById("affaires_ouvertes").value) || 0,
+      offres_realisees: Number(document.getElementById("offres_realisees").value) || 0,
+      potentiel_vu: Number(document.getElementById("potentiel_vu").value) || 0,
+      commandes: Number(document.getElementById("commandes").value) || 0,
+      offre_cgi: Number(document.getElementById("offre_cgi").value) || 0,
+      commandes_cgi: Number(document.getElementById("commandes_cgi").value) || 0,
+      offre_arval: Number(document.getElementById("offre_arval").value) || 0,
+      commandes_arval: Number(document.getElementById("commandes_arval").value) || 0,
+      commandes_autre: Number(document.getElementById("commandes_autre").value) || 0,
+      commentaire: document.getElementById("commentaire").value || ""
+    };
+
+    try {
+      await fetch(WEBHOOK_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      // mode "no-cors" ne permet pas de lire la réponse : on considère l'envoi réussi
+      // si aucune exception réseau n'a été levée.
+      statusEl.className = "success";
+      statusEl.textContent = "Déclaration enregistrée. Merci !";
+      statusEl.style.display = "block";
+
+      // Réinitialise les champs numériques pour permettre une nouvelle saisie le même jour
+      form.querySelectorAll('input[type="number"]').forEach(el => el.value = 0);
+      document.getElementById("commentaire").value = "";
+      document.getElementById("date").value = new Date().toISOString().split("T")[0];
+
+    } catch (err) {
+      statusEl.className = "error";
+      statusEl.textContent = "Erreur d'envoi. Vérifie ta connexion et réessaie.";
+      statusEl.style.display = "block";
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Envoyer la déclaration";
+    }
+  });
+</script>
+
+</body>
+</html>
