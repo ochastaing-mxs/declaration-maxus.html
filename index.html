@@ -170,6 +170,11 @@
   <h1>Déclaration quotidienne MAXUS</h1>
   <p>Suivi commercial &mdash; réseau distributeurs</p>
   <div id="site-badge">Chargement du site&hellip;</div>
+  <div id="site-select-wrapper" style="display:none; margin-top:14px;">
+    <select id="siteSelect" style="padding:10px 16px; border-radius:20px; border:1px solid var(--cyan); background:var(--navy); color:var(--cyan); font-size:0.9rem; font-weight:600; max-width:90vw;">
+      <option value="">Sélectionne ton site&hellip;</option>
+    </select>
+  </div>
 </header>
 
 <main>
@@ -250,23 +255,55 @@
 </main>
 
 <script>
-  // Webhook Make.com (relai vers Airtable, accepte les requêtes envoyées depuis un navigateur)
+  // Webhook Make.com d'écriture (relai vers Airtable pour enregistrer une déclaration)
   const WEBHOOK_URL = "https://hook.eu2.make.com/39hyl9j3b8oz8sl6bng5ciu4b13a7t5o";
+  // Webhook Make.com de lecture (récupère la liste des sites actifs depuis Airtable)
+  const SITES_LIST_URL = "https://hook.eu1.make.com/g0itui2pei21h8lw1esjw5is014lxy43";
 
   const params = new URLSearchParams(window.location.search);
-  const site = params.get("site");
+  let site = params.get("site");
   const badge = document.getElementById("site-badge");
+  const selectWrapper = document.getElementById("site-select-wrapper");
+  const siteSelect = document.getElementById("siteSelect");
   const form = document.getElementById("declForm");
   const statusEl = document.getElementById("status");
   const submitBtn = document.getElementById("submitBtn");
 
   if (site) {
+    // Lien pré-rempli classique (un site précis transmis dans l'URL)
     badge.textContent = site;
   } else {
-    badge.textContent = "Site non identifié";
-    statusEl.className = "missing-site";
-    statusEl.textContent = "Ce lien ne précise pas de site. Utilise le lien qui t'a été transmis par ton Directeur Régional.";
+    // Pas de site dans le lien : on charge la liste des sites actifs et on affiche un menu déroulant
+    badge.textContent = "Chargement de la liste des sites…";
     submitBtn.disabled = true;
+
+    fetch(SITES_LIST_URL)
+      .then((res) => res.json())
+      .then((data) => {
+        const sites = Array.isArray(data) ? data : (data.sites || []);
+        if (!sites.length) throw new Error("Liste vide");
+
+        badge.style.display = "none";
+        selectWrapper.style.display = "block";
+
+        sites.forEach((s) => {
+          const opt = document.createElement("option");
+          opt.value = s.Distributeur || s.name || s;
+          opt.textContent = s.Distributeur || s.name || s;
+          siteSelect.appendChild(opt);
+        });
+
+        siteSelect.addEventListener("change", () => {
+          site = siteSelect.value;
+          submitBtn.disabled = !site;
+        });
+      })
+      .catch(() => {
+        badge.textContent = "Impossible de charger la liste des sites";
+        statusEl.className = "missing-site";
+        statusEl.textContent = "La liste des sites n'a pas pu être chargée. Vérifie ta connexion ou contacte ton Directeur Régional.";
+        statusEl.style.display = "block";
+      });
   }
 
   // Date du jour par défaut
