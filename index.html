@@ -214,6 +214,10 @@
           <input type="number" id="commandes" min="0" value="0" required>
         </div>
       </div>
+      <div class="field">
+        <label for="livraisons">Livraisons</label>
+        <input type="number" id="livraisons" min="0" value="0">
+      </div>
     </div>
 
     <div class="card">
@@ -364,6 +368,7 @@
       leads_traites: Number(document.getElementById("leads_traites").value) || 0,
       potentiel_vu: Number(document.getElementById("potentiel_vu").value) || 0,
       commandes: Number(document.getElementById("commandes").value) || 0,
+      livraisons: Number(document.getElementById("livraisons").value) || 0,
       offre_cgi: Number(document.getElementById("offre_cgi").value) || 0,
       commandes_cgi: Number(document.getElementById("commandes_cgi").value) || 0,
       offre_arval: Number(document.getElementById("offre_arval").value) || 0,
