@@ -6,16 +6,16 @@
 <title>Déclaration quotidienne MAXUS</title>
 <style>
   :root {
-    --navy: #1E2740;
-    --navy-light: #2A3556;
-    --cyan: #25CCF5;
-    --cyan-dark: #12A8CC;
-    --bg: #F4F6F9;
+    --navy: #0A0A0A;
+    --navy-light: #1A1A1A;
+    --cyan: #FFFFFF;
+    --cyan-dark: #C8C8C8;
+    --bg: #F4F4F4;
     --card: #FFFFFF;
-    --text: #1E2740;
-    --text-muted: #6B7690;
-    --border: #E3E7EF;
-    --error: #E14F4F;
+    --text: #0A0A0A;
+    --text-muted: #6B6B6B;
+    --border: #E0E0E0;
+    --error: #D62828;
     --success: #1FAE7A;
   }
   * { box-sizing: border-box; }
@@ -33,9 +33,7 @@
     text-align: center;
   }
   header .logo-mark {
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--cyan), var(--cyan-dark));
+    height: 40px;
     margin: 0 auto 12px;
   }
   header h1 {
@@ -52,7 +50,7 @@
   #site-badge {
     display: inline-block;
     margin-top: 14px;
-    background: rgba(37, 204, 245, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     border: 1px solid var(--cyan);
     color: var(--cyan);
     padding: 6px 16px;
@@ -166,7 +164,7 @@
 <body>
 
 <header>
-  <div class="logo-mark"></div>
+  <img class="logo-mark" src="logo-maxus.png" alt="MAXUS">
   <h1>Déclaration quotidienne MAXUS</h1>
   <p>Suivi commercial &mdash; réseau distributeurs</p>
   <div id="site-badge">Chargement du site&hellip;</div>
@@ -196,6 +194,11 @@
           <label for="offres_realisees">Offres réalisées <span class="req">*</span></label>
           <input type="number" id="offres_realisees" min="0" value="0" required>
         </div>
+      </div>
+      <div id="entreprises-container"></div>
+      <div class="field">
+        <label for="leads_traites">Leads traités</label>
+        <input type="number" id="leads_traites" min="0" value="0">
       </div>
       <div class="pair">
         <div class="field">
@@ -309,6 +312,32 @@
   // Date du jour par défaut
   document.getElementById("date").value = new Date().toISOString().split("T")[0];
 
+  // Génère un champ "Nom d'entreprise" par affaire ouverte déclarée
+  const affairesInput = document.getElementById("affaires_ouvertes");
+  const entreprisesContainer = document.getElementById("entreprises-container");
+
+  function renderEntrepriseFields() {
+    const n = Math.max(0, Number(affairesInput.value) || 0);
+    const existing = entreprisesContainer.querySelectorAll("input").length;
+
+    if (n > existing) {
+      for (let i = existing; i < n; i++) {
+        const div = document.createElement("div");
+        div.className = "field entreprise-field";
+        div.innerHTML = `<label>Nom de l'entreprise (affaire ${i + 1}) <span class="req">*</span></label>
+          <input type="text" class="entreprise-input" placeholder="Nom de l'entreprise" required>`;
+        entreprisesContainer.appendChild(div);
+      }
+    } else if (n < existing) {
+      const fields = entreprisesContainer.querySelectorAll(".entreprise-field");
+      for (let i = existing - 1; i >= n; i--) {
+        fields[i].remove();
+      }
+    }
+  }
+  affairesInput.addEventListener("input", renderEntrepriseFields);
+  renderEntrepriseFields();
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!site) return;
@@ -318,11 +347,17 @@
     statusEl.className = "";
     statusEl.style.display = "none";
 
+    const entreprises = Array.from(entreprisesContainer.querySelectorAll(".entreprise-input"))
+      .map(el => el.value.trim())
+      .filter(Boolean);
+
     const payload = {
       site: site,
       date: document.getElementById("date").value,
       affaires_ouvertes: Number(document.getElementById("affaires_ouvertes").value) || 0,
+      entreprises: entreprises.join(", "),
       offres_realisees: Number(document.getElementById("offres_realisees").value) || 0,
+      leads_traites: Number(document.getElementById("leads_traites").value) || 0,
       potentiel_vu: Number(document.getElementById("potentiel_vu").value) || 0,
       commandes: Number(document.getElementById("commandes").value) || 0,
       offre_cgi: Number(document.getElementById("offre_cgi").value) || 0,
@@ -351,6 +386,7 @@
       form.querySelectorAll('input[type="number"]').forEach(el => el.value = 0);
       document.getElementById("commentaire").value = "";
       document.getElementById("date").value = new Date().toISOString().split("T")[0];
+      renderEntrepriseFields();
 
     } catch (err) {
       statusEl.className = "error";
